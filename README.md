@@ -12,7 +12,7 @@ The end product can be implemented as a web app with the 3D part being done in J
 the python server would load the model and then send it to the frontend everytime the user chooses to use a different image instance (so like make a reload button or sth)
 
 ## user group
-Expert users, so we can invite a few friends DSAI students as participants in the usability/robustness studies.
+Expert users, so we can invite a few DSAI students as participants in the usability/robustness studies.
 
 ## optional idea
 We can make use of an additional input device apart from keyboard and mouse to support gestures, I think lecture 5 mentions a device that is connected to the computer and allows the use of gestures. 
