@@ -1,4 +1,3 @@
-# HCI-_project
 # Neural network visualization app:
 ## basic idea 
 Visualize an image classification model's neuron activations through a heatmap, use Explainable AI as motivation for research. The model makes a classification on a single instance from the test set (or whatever we will look for a dataset that is suitable, could modify this for whatever suits the research question) and then the application displays it in a 3D space where the user can move around or focus specific parts. 
