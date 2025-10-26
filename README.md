@@ -18,3 +18,19 @@ Expert users, so we can invite a few DSAI students as participants in the usabil
 We can make use of an additional input device apart from keyboard and mouse to support gestures, I think lecture 5 mentions a device that is connected to the computer and allows the use of gestures. 
 Professor said that they have a couple of those at the university. I would first like to focus on getting the basics working and evaluating the feasibility of this. Could also ask a TA if the gestures can
 be easily incorporated into the project so e.g. the gesture device would automatically translate the inputs or would we have to do that ourselves.
+
+---
+
+### Setup
+Install dependencies:
+```bash
+pip install -r requirements.txt
+```
+
+
+### Fully Connected Neurons Visualization
+Visualize all individual neurons in FC layers with their connections:
+```bash
+python visualize_fc_neurons.py panda.jpg
+```
+
