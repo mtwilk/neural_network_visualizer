@@ -1,9 +1,3 @@
-"""
-Visualize all neurons in VGG19's fully connected layers with their connections.
-- Shows every neuron as a node
-- Draws connections between layers with very thin lines
-- Colors connections by weight * activation (green=positive, red=negative)
-"""
 from argparse import ArgumentParser
 from pathlib import Path
 from typing import Dict, List, Tuple
@@ -12,13 +6,13 @@ import numpy as np
 import torch
 import torch.nn as nn
 from PIL import Image
-from torchvision.models import vgg19, VGG19_Weights
+from torchvision.models import vgg19, VGG19_Weights, resnet18, ResNet18_Weights, efficientnet_b0, EfficientNet_B0_Weights
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 
 
 class FCActivationExtractor:
-    """Extract activations from fully connected layers."""
+    """Extract activations from fully connected layers during classification."""
     
     def __init__(self):
         self.activations: Dict[str, torch.Tensor] = {}
@@ -74,11 +68,11 @@ def value_to_color(value: float, vmin: float, vmax: float) -> Tuple[float, float
         return (intensity, 0.0, 0.0, min(0.8, intensity * 0.5 + 0.1))
 
 
-def compute_neuron_positions(layer_sizes: List[int], x_spacing: float) -> List[List[Tuple[float, float]]]:
+def compute_neuron_positions(layer_sizes: List[int], xspacing: float) -> List[List[Tuple[float, float]]]:
     neuron_positions = []
     
     for layer_idx, size in enumerate(layer_sizes):
-        x = layer_idx * x_spacing
+        x = layer_idx * xspacing
         y_spacing = 1.0 / (size + 1)
         
         positions = []
@@ -95,10 +89,7 @@ def visualize_fc_network_with_input(fc_layers: List[Dict],
                                     input_activations: Dict[str, torch.Tensor],
                                     image_name: str,
                                     subsample: int = 10000,
-                                    edge_width: float = 0.03):
-    """
-    Enhanced visualization that handles input properly by hooking inputs too.
-    """
+                                    edge_width: float = 0.02):
     neuron_size = edge_width
     
     fig, ax = plt.subplots(figsize=(24, 14))
@@ -119,14 +110,11 @@ def visualize_fc_network_with_input(fc_layers: List[Dict],
     
     # Compute positions
     num_layers = len(layer_sizes)
-    x_spacing = 1.0 / (num_layers - 1) if num_layers > 1 else 0.5
+    xspacing = 1.0 / (num_layers + 1)
     
-    neuron_positions = compute_neuron_positions(layer_sizes, x_spacing)
+    neuron_positions = compute_neuron_positions(layer_sizes, xspacing)
     
-    # Collect activation values for all layers (including input layer)
-    print("Collecting activation values...")
     layer_activations = []
-    
     # Input layer activations (flattened conv features)
     first_fc_name = fc_layers[0]['name']
     input_act = input_activations.get(first_fc_name)
@@ -151,10 +139,6 @@ def visualize_fc_network_with_input(fc_layers: List[Dict],
         input_np = layer_activations[layer_idx]  # Previous layer
         output_np = layer_activations[layer_idx + 1]  # Current layer
         
-        if input_np is None or output_np is None:
-            print(f"Missing activation data for {name}")
-            continue
-        
         weight = module.weight.detach().cpu().numpy()  # (out, in)
         
         # Compute contributions
@@ -164,15 +148,13 @@ def visualize_fc_network_with_input(fc_layers: List[Dict],
             'layer_idx': layer_idx,
             'contributions': contributions,
         })
-        
-        all_values.extend(contributions.flatten())
     
-    if all_values:
-        vmin = np.percentile(all_values, 1)  # Use percentile to avoid outliers
-        vmax = np.percentile(all_values, 99)
-        print(f"Edge value range (1-99 percentile): [{vmin:.4f}, {vmax:.4f}]")
-    else:
-        vmin, vmax = -1.0, 1.0
+        all_values = contributions.flatten()
+    
+    vmin = np.percentile(all_values, 1)
+    vmax = np.percentile(all_values, 99)
+    print(f"Edge value range (1-99 percentile): [{vmin:.4f}, {vmax:.4f}]")
+    
     
     # Draw edges with subsampling
     print(f"Drawing connections (subsampling to ~{subsample} edges)...")
@@ -186,8 +168,12 @@ def visualize_fc_network_with_input(fc_layers: List[Dict],
         
         total_edges = out_size * in_size
         if subsample and total_edges > subsample:
-            # Random sample of edges
-            edge_indices = np.random.choice(total_edges, subsample, replace=False)
+            # edge_indices = np.random.choice(total_edges, subsample, replace=False)
+            # sample the most extreme edge values, half positive, half negative
+            # with the sum equal to subsample
+            lowest_indices = np.argpartition(contributions.flatten(), subsample // 2)[:subsample // 2]
+            highest_indices = np.argpartition(contributions.flatten(), -subsample // 2)[-subsample // 2:]
+            edge_indices = np.concatenate((lowest_indices, highest_indices))
         else:
             edge_indices = np.arange(total_edges)
         
@@ -224,22 +210,20 @@ def visualize_fc_network_with_input(fc_layers: List[Dict],
         act_values = layer_activations[layer_idx]
         
         for neuron_idx, pos in enumerate(neuron_positions[layer_idx]):
-            if pos is None:
-                continue
-            
             x, y = pos
             
             # Color by activation
-            if act_values is not None and neuron_idx < len(act_values):
-                val = act_values[neuron_idx]
-                if val >= 0:
-                    intensity = min(1.0, val / vmax) if vmax > 0 else 0
-                    node_color = (0.0, intensity, 0.0)
-                else:
-                    intensity = min(1.0, abs(val) / abs(vmin)) if vmin < 0 else 0
-                    node_color = (intensity, 0.0, 0.0)
-            else:
-                node_color = (0.5, 0.5, 0.5)
+            # if act_values is not None and neuron_idx < len(act_values):
+            #     val = act_values[neuron_idx]
+            #     if val >= 0:
+            #         intensity = min(1.0, val / vmax) if vmax > 0 else 0
+            #         node_color = (0.0, intensity, 0.0)
+            #     else:
+            #         intensity = min(1.0, abs(val) / abs(vmin)) if vmin < 0 else 0
+            #         node_color = (intensity, 0.0, 0.0)
+            # else:
+            #     node_color = (0.5, 0.5, 0.5)
+            node_color = value_to_color(act_values[neuron_idx], vmin, vmax)
             
             circle = plt.Circle((x, y), neuron_size / 1000, color=node_color, zorder=2, 
                               ec='lightgray', linewidth=0.2)
@@ -247,19 +231,20 @@ def visualize_fc_network_with_input(fc_layers: List[Dict],
     
     # Labels
     for layer_idx in range(num_layers):
-        x = layer_idx * x_spacing
+        x = layer_idx * xspacing
         ax.text(x, -0.05, layer_names[layer_idx], 
                ha='center', va='top', fontsize=11, fontweight='bold')
         ax.text(x, 1.05, f"{layer_sizes[layer_idx]} neurons",
                ha='center', va='bottom', fontsize=9)
     
-    ax.set_xlim(-0.1, 1.1)
-    ax.set_ylim(-0.1, 1.15)
+    # ax.set_xlim(-0.1, 1.1)
+    # ax.set_ylim(-0.1, 1.15)
+    ax.set_facecolor('black')
     ax.set_aspect('equal')
     ax.axis('off')
     
-    ax.set_title(f"VGG19 Fully Connected Network: {image_name}\n({edges_drawn:,} connections shown)",
-                fontsize=14, fontweight='bold', pad=20)
+    ax.set_title(f"NN visualization: {image_name}, ({edges_drawn:,} connections shown)",
+                fontsize=12, fontweight='bold', pad=20)
     
     # Legend
     legend_elements = [
@@ -279,8 +264,8 @@ def main():
                        help="Save visualization to file")
     parser.add_argument("--subsample", type=int, default=10000,
                        help="Maximum number of connections to draw (for readability)")
-    parser.add_argument("--edge-width", type=float, default=0.03,
-                       help="Width of connection lines (default: 0.03)")
+    parser.add_argument("--edge-width", type=float, default=0.02,
+                       help="Width of connection lines (default: 0.02)")
     parser.add_argument("--neuron-size", type=float, default=None,
                        help="Size of neuron circles (default: 2x edge-width)")
     args = parser.parse_args()
@@ -295,7 +280,18 @@ def main():
     weights = VGG19_Weights.DEFAULT
     model = vgg19(weights=weights)
     model.eval()
-    
+
+
+    # print(f"Loading ResNet18 model...")
+    # weights = ResNet18_Weights.DEFAULT
+    # model = resnet18(weights=weights)
+    # model.eval()
+
+    # print("Loading EfficientNet_B0 model...")
+    # weights = EfficientNet_B0_Weights.DEFAULT
+    # model = efficientnet_b0(weights=weights)
+    # model.eval()
+
     preprocess = weights.transforms()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model.to(device)
