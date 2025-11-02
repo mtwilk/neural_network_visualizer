@@ -91,6 +91,7 @@ class NetworkVisualizer:
         Classify an image and return the label and score.
         :rtype: (str, float)
         """
+        self.extractor.remove_hooks()
         # Register hooks before running inference
         self.fc_layers = self.extractor.register_hooks(self.model)
         
