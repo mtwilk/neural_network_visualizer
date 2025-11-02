@@ -8,6 +8,7 @@ CORS(app)
 
 # initialize globally so we don't have to reload the neural network every time we want to classify
 VISUALIZER = NetworkVisualizer()
+VISUALIZER.load_model()
 
 def send_visualization_data(data: dict) -> wrappers.Response:
     """
@@ -16,6 +17,7 @@ def send_visualization_data(data: dict) -> wrappers.Response:
 
     :type: color List[float]
     :type: position: Tuple[float, float]
+
     :type: label: str
     :type: score: float
     :type: edge positions: List[Tuple[position_start, position_end, color]]
@@ -23,6 +25,7 @@ def send_visualization_data(data: dict) -> wrappers.Response:
     :type: num_layers: int
     :type: layer_sizes: List[int]
     :type: layer_names: List[str]
+    :rytype: Response
     """
     label, score = VISUALIZER.classify_image(data['image_path'])
 
