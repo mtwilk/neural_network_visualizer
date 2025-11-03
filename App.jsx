@@ -61,14 +61,18 @@ function App() {
       scene.add(line);
     });
 
-    // Draw neurons
+    // Draw neurons as polygons (octagons) for better visibility
+    const sides = 8; // for the octagon
+    const radius = 0.015; // can be adjusted for size
+
     networkData.neuron_positions.forEach(([pos, color]) => {
-      const geometry = new THREE.CircleGeometry(0.015, 12);
+      const geometry = new THREE.CircleGeometry(radius, sides);
       const material = new THREE.MeshBasicMaterial({
         color: new THREE.Color(color[0], color[1], color[2]),
         opacity: color[3],
         transparent: true,
       });
+      
       const neuron = new THREE.Mesh(geometry, material);
       neuron.position.set(pos[0], pos[1], 0);
       scene.add(neuron);
