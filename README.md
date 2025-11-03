@@ -34,3 +34,13 @@ Visualize all individual neurons in FC layers with their connections:
 python visualize_fc_neurons.py panda.jpg
 ```
 
+### run the web app
+'''bash
+cd HCI_project
+python flask_server.py
+'''
+in a new terminal
+'''bash
+cd HCI_project/frontend
+npm run dev
+'''
