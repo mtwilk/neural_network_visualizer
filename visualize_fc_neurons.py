@@ -119,7 +119,11 @@ class NetworkVisualizer:
             
             positions = []
             act_values = self.layer_activations[layer_idx]
-            for neuron_idx in range(size):
+            
+            # Ensure we don't go out of bounds
+            actual_size = min(size, len(act_values))
+            
+            for neuron_idx in range(actual_size):
                 y = (neuron_idx + 1) * y_spacing
                 positions.append((x, y))
                 color = self.value_to_color(act_values[neuron_idx],
@@ -127,6 +131,13 @@ class NetworkVisualizer:
                                            np.max(act_values))
                 
                 self.node_display_data.append(((x, y), color))
+            
+            # Add positions for remaining neurons if size > len(act_values)
+            for neuron_idx in range(actual_size, size):
+                y = (neuron_idx + 1) * y_spacing
+                positions.append((x, y))
+                # Use a neutral color for neurons without activation data
+                self.node_display_data.append(((x, y), (0.5, 0.5, 0.5, 0.3)))
 
             neuron_positions.append(positions)
 
@@ -288,11 +299,11 @@ def main():
     visualizer.load_model('vgg19')
     
     image_path = "panda.jpg"  # Example image path
-    visualizer.image_name = Path(image_path).name
+    # visualizer.image_name = Path(image_path).name
     
-    print(f"Classifying image: {image_path}")
+    # print(f"Classifying image: {image_path}")
     label, score = visualizer.classify_image(image_path)
-    print(f"Classification result: {label} ({score:.2f})")
+    # print(f"Classification result: {label} ({score:.2f})")
 
     print("Computing visualization data...")
     visualizer.compute_visualization_data()

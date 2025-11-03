@@ -4,11 +4,28 @@ from visualize_fc_neurons import NetworkVisualizer
 import os
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, resources={r"/*": {"origins": "*"}})
 
 # initialize globally so we don't have to reload the neural network every time we want to classify
 VISUALIZER = NetworkVisualizer()
 VISUALIZER.load_model()
+
+def convert_to_json_serializable(obj):
+    """Convert numpy types to native Python types for JSON serialization."""
+    import numpy as np
+    
+    if isinstance(obj, (np.integer, np.int32, np.int64)):
+        return int(obj)
+    elif isinstance(obj, (np.floating, np.float32, np.float64)):
+        return float(obj)
+    elif isinstance(obj, np.ndarray):
+        return obj.tolist()
+    elif isinstance(obj, (list, tuple)):
+        return [convert_to_json_serializable(item) for item in obj]
+    elif isinstance(obj, dict):
+        return {key: convert_to_json_serializable(value) for key, value in obj.items()}
+    else:
+        return obj
 
 def send_visualization_data(data: dict) -> wrappers.Response:
     """
@@ -31,20 +48,27 @@ def send_visualization_data(data: dict) -> wrappers.Response:
 
     VISUALIZER.compute_visualization_data()
 
-    return jsonify({
+    # Convert all data to JSON-serializable format
+    response_data = {
         'label': label,
-        'score': score,
-        'edge positions': VISUALIZER.edge_display_data,
-        'neuron_positions': VISUALIZER.node_display_data,
-        'num_layers': VISUALIZER.num_layers,
-        'layer_sizes': VISUALIZER.layer_sizes,
+        'score': float(score),
+        'edge positions': convert_to_json_serializable(VISUALIZER.edge_display_data),
+        'neuron_positions': convert_to_json_serializable(VISUALIZER.node_display_data),
+        'num_layers': int(VISUALIZER.num_layers),
+        'layer_sizes': convert_to_json_serializable(VISUALIZER.layer_sizes),
         'layer_names': VISUALIZER.layer_names,
-    })
+    }
+
+    return jsonify(response_data)
+
+# @app.route('/')
+# def index():
+#     return jsonify({'status': 'Flask server is running', 'routes': ['/main']})
 
 @app.route('/main', methods=['POST'])
 def main():
     data = request.json
-    if data['image_path'] and type(data['image_path']) == str:
+    if type(data['image_path']) == str:
         return send_visualization_data(data)
 
     return jsonify({'error': 'Invalid image path'}), 400
