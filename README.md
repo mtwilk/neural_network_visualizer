@@ -35,12 +35,12 @@ python visualize_fc_neurons.py panda.jpg
 ```
 
 ### run the web app
-'''bash
+```bash
 cd HCI_project
 python flask_server.py
-'''
+```
 in a new terminal
-'''bash
+```bash
 cd HCI_project/frontend
 npm run dev
-'''
+```
