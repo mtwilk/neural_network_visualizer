@@ -4,6 +4,8 @@ import * as THREE from 'three';
 import SceneInit from './SceneInit';
 
 function App() {
+  const [label, setLabel] = useState('');  // Holds the classification label 
+  const [score, setScore] = useState(null);  // Holds the confidence score
   const [networkData, setNetworkData] = useState(null);  // Holds the network data
   const [loading, setLoading] = useState(false);  // Indicates loading state
   const sceneRef = useRef(null);  // Reference to the Three.js scene
@@ -14,6 +16,20 @@ function App() {
     sceneRef.current.initialize();
     sceneRef.current.animate();
   }, []);
+
+  // Setting parameters for the overlay displaying the classification results
+  const overlayStyle = {
+    position: 'fixed',
+    top: '0',
+    right: '0',
+    background: 'black',
+    padding: '10px',
+    borderRadius: '5px 0 0 5px',
+    boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+    zIndex: 1000,
+    fontFamily: 'Arial, sans-serif',
+    color: 'white' // White text for better contrast
+  };
 
   // Fetch network data from backend
   const handleUpload = async () => {
@@ -28,8 +44,10 @@ function App() {
 
       // Parse JSON response and update network data state
       const data = await response.json();
+      setLabel(data.label);
+      setScore(data.score);
       console.log('Backend response:', data);
-      setNetworkData(data);
+      setNetworkData(data);  // Network data is processed later 
     } catch (err) {
       console.error('Error fetching network data:', err);
     } finally {
@@ -116,6 +134,13 @@ function App() {
           {loading ? 'Loading...' : 'Load panda.jpg'}
         </button>
       </div>
+      {(label || score !== null) && (
+        <div style={overlayStyle}>
+          <strong>Classification Result:</strong><br />
+          {label && <span>Label: {label}<br /></span>}
+          {score !== null && <span>Confidence Score: {score.toFixed(4)}</span>}
+        </div>
+      )}
 
       <canvas id="myThreeJsCanvas" />
     </div>
