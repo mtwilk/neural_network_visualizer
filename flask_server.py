@@ -7,8 +7,8 @@ app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
 
 # initialize globally so we don't have to reload the neural network every time we want to classify
-VISUALIZER = NetworkVisualizer()
-VISUALIZER.load_model()
+# no
+
 
 def convert_to_json_serializable(obj):
     """Convert numpy types to native Python types for JSON serialization."""
@@ -44,6 +44,9 @@ def send_visualization_data(data: dict) -> wrappers.Response:
     :type: layer_names: List[str]
     :rytype: Response
     """
+    VISUALIZER = NetworkVisualizer()
+    VISUALIZER.load_model()
+
     label, score = VISUALIZER.classify_image(data['image_path'])
 
     VISUALIZER.compute_visualization_data()
