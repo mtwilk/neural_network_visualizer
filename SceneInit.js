@@ -2,29 +2,33 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 
+// Class to initialize and manage the Three.js scene
 export default class SceneInit {
   constructor(canvasId) {
     // Core components of the scene
     this.scene = undefined;
     this.camera = undefined;
     this.renderer = undefined;
+    this.controls = undefined;
+
 
     // Camera parameters;
-    this.fov = 45;
-    this.nearPlane = 1;
-    this.farPlane = 1000;
+    this.nearPlane = 1;  // Render objects larger than this value
+    this.farPlane = 1000;  // Render objects smaller than this value
     this.canvasId = canvasId;
 
-    this.controls = undefined;
   }
 
   initialize() {
-    const frustumSize = 100;
+    const frustumSize = 100;  // Size of visible area  
     this.frustumSize = frustumSize;  // Store frustum size for later use
 
-    const aspect = window.innerWidth / window.innerHeight;
+    const aspect = window.innerWidth / window.innerHeight;  // Aspect ratio of the window
 
+    // Create the scene
     this.scene = new THREE.Scene();
+
+    // Setting up the orthographic camera
     this.camera = new THREE.OrthographicCamera(
         (frustumSize * aspect) / -2, 
         (frustumSize * aspect) / 2,  
@@ -34,36 +38,37 @@ export default class SceneInit {
         1000                         
     );
 
-    this.camera.position.z = 1;
-    this.camera.lookAt(0, 0, 0);
+    this.camera.position.z = 1;  // Position the camera slightly away from the origin
+    this.camera.lookAt(0, 0, 0);  // Look at the center of the scene (network)
 
     // Specify a canvas created in the HTML.
     const canvas = document.getElementById(this.canvasId);
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
-    this.renderer.setSize(window.innerWidth, window.innerHeight);
-    this.renderer.setClearColor(0xffffff, 1);
+    this.renderer.setSize(window.innerWidth, window.innerHeight);  // Full window size
+    this.renderer.setClearColor(0xffffff, 1);  // White background
 
     // Create the controls
     this.controls = new OrbitControls(this.camera, this.renderer.domElement);
 
     this.controls.enableRotate = false;  // Rotation disables due to 2D space 
 
-    this.controls.enableZoom = true; 
+    this.controls.enableZoom = true;  
     this.controls.enablePan = true;
-    this.controls.screenSpacePanning = true;
+    this.controls.screenSpacePanning = true;  
 
     this.controls.zoomSpeed = 0.5;
     this.controls.panSpeed = 0.8;
 
     this.controls.target.set(0, 0, 0); 
     
+    // Customize mouse buttons for panning and zooming
     this.controls.mouseButtons = {
       LEFT: THREE.MOUSE.PAN, 
       MIDDLE: THREE.MOUSE.DOLLY,
       RIGHT: THREE.MOUSE.ROTATE
     };
 
-    // To correct for Window resizing
+    // Handle window resizing
     window.addEventListener('resize', () => this.onWindowResize(), false);
 
     // Bind method so external calls are possible 
@@ -71,14 +76,15 @@ export default class SceneInit {
 
   }
 
+  // Animation loop
   animate() {
     window.requestAnimationFrame(this.animate.bind(this));
     this.render();
     this.controls.update();
   }
 
+  // Draw the scene
   render() {
-    // Update data on each render.
     this.renderer.render(this.scene, this.camera);
   }
 
@@ -114,6 +120,7 @@ export default class SceneInit {
 
   }
 
+  // Keeps the aspect ratio when resizing the window 
   onWindowResize() {
     const aspect = window.innerWidth / window.innerHeight;
     const frustumSize = this.frustumSize; 
