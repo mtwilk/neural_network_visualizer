@@ -1,13 +1,14 @@
-import { useEffect, useState, useRef } from 'react';
+// Importing necessary libraries and components  for the network visualization 
+import { useEffect, useState, useRef } from 'react'; 
 import * as THREE from 'three';
 import SceneInit from './SceneInit';
 
 function App() {
-  const [networkData, setNetworkData] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const sceneRef = useRef(null);
+  const [networkData, setNetworkData] = useState(null);  // Holds the network data
+  const [loading, setLoading] = useState(false);  // Indicates loading state
+  const sceneRef = useRef(null);  // Reference to the Three.js scene
 
-  // Initialize the Three.js scene once
+  // Initialize the Three.js scene
   useEffect(() => {
     sceneRef.current = new SceneInit('myThreeJsCanvas');
     sceneRef.current.initialize();
@@ -16,14 +17,16 @@ function App() {
 
   // Fetch network data from backend
   const handleUpload = async () => {
-    setLoading(true);
+    setLoading(true);  // Show loading indicator
     try {
+      // Send POST request to backend with image path
       const response = await fetch('http://localhost:5000/main', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ image_path: 'panda.jpg' }),
       });
 
+      // Parse JSON response and update network data state
       const data = await response.json();
       console.log('Backend response:', data);
       setNetworkData(data);
@@ -38,24 +41,30 @@ function App() {
   useEffect(() => {
     if (!networkData || !sceneRef.current) return;
 
-    const { scene } = sceneRef.current;
+    const { scene } = sceneRef.current;  // Get the Three.js scene
 
-    // Clear old objects before drawing new ones
+    // Remove existing objects from the scene (resets it)
     while (scene.children.length > 0) {
       scene.remove(scene.children[0]);
     }
 
-    // Compute bounds for fitting the network 
+    // Find bounds of the network to center and scale it properly
     const allPositions = networkData.neuron_positions.map(([pos]) => pos).concat(networkData["edge positions"].flatMap(([s,e]) => [s, e]));
+    
+    // Extract x and y coordinates
     const xs = allPositions.map(p => p[0]);
     const ys = allPositions.map(p => p[1]);
+    
+    // Compute bounds
     const minX = Math.min(...xs), maxX = Math.max(...xs);
     const minY = Math.min(...ys), maxY = Math.max(...ys);
+    
+    // Compute dimensions 
     const width = Math.max(1e-6, maxX - minX);
     const height = Math.max(1e-6, maxY - minY);
 
-    // target size in scene units (should be a bit smaller than frustumSize)
-    const targetSize = 80;
+    // Determine scale to fit the network within a target size
+    const targetSize = 80;  // network size in scene space (smaller than frustumSize)
     const scale = targetSize / Math.max(width, height);
     const offsetX = (minX + maxX) / 2;
     const offsetY = (minY + maxY) / 2;
@@ -77,7 +86,7 @@ function App() {
     });
 
     // Draw neurons as polygons (octagons) for better visibility
-    const sides = 8; // for the octagon
+    const sides = 8; // octagon
     const radius = 0.015; // can be adjusted for size
 
     networkData.neuron_positions.forEach(([pos, color]) => {
