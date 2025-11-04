@@ -77,6 +77,12 @@ function App() {
       neuron.position.set(pos[0], pos[1], 0);
       scene.add(neuron);
     });
+
+    // Fit the camera to the network so it is instantly visible
+    if (typeof sceneRef.current.fitToScene === 'function') {
+      sceneRef.current.fitToScene(1.15);
+    }
+
   }, [networkData]);
 
   return (

@@ -19,8 +19,8 @@ export default class SceneInit {
   }
 
   initialize() {
-    const aspect = window.innerWidth / window.innerHeight;
     const frustumSize = 100;
+    this.frustumSize = frustumSize;  // Store frustum size for later use
 
     this.scene = new THREE.Scene();
     this.camera = new THREE.OrthographicCamera(
@@ -64,6 +64,9 @@ export default class SceneInit {
     // To correct for Window resizing
     window.addEventListener('resize', () => this.onWindowResize(), false);
 
+    // Bind method so external calls are possible 
+    this.fitToScene = this.fitToScene.bind(this);
+
   }
 
   animate() {
@@ -77,9 +80,41 @@ export default class SceneInit {
     this.renderer.render(this.scene, this.camera);
   }
 
+  // Fitting the camera to the current scene contents aka the network 
+  fitToScene(padding = 1.2) {
+    // Compute the bounding box of the scene
+    const box = new THREE.Box3().setFromObject(this.scene);
+    const size = box.getSize(new THREE.Vector3());
+    const center = box.getCenter(new THREE.Vector3());
+
+    // Avoid zero-size box: automatically adjusts size if too small
+    const eps = 1e-6; 
+    if (size.x < eps) size.x = 1.0;
+    if (size.y < eps) size.y = 1.0;
+
+    const aspect = window.innerWidth / window.innerHeight; 
+    const frustumHeight = this.frustumSize;
+    const frustumWidth = this.frustumSize * aspect;
+
+    // Zoom properties
+    const zoomX = frustumWidth / (size.x * padding);
+    const zoomY = frustumHeight / (size.y * padding); 
+    const newZoom = Math.min(zoomX, zoomY);
+
+    this.camera.zoom = Math.max(newZoom, 0.0001); // Prevent too much zoom-in
+    this.camera.updateProjectionMatrix();
+
+    // Setting the camera to the center of the bounding box
+    this.camera.position.x = center.x;
+    this.camera.position.y = center.y;
+    this.controls.target.copy(center);
+    this.controls.update();
+
+  }
+
   onWindowResize() {
     const aspect = window.innerWidth / window.innerHeight;
-    const frustumSize = 100;
+    const frustumSize = this.frustumSize; 
     this.camera.left = (frustumSize * aspect) / -2;
     this.camera.right = (frustumSize * aspect) / 2;
     this.camera.top = frustumSize / 2;
