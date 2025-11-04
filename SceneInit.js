@@ -22,6 +22,8 @@ export default class SceneInit {
     const frustumSize = 100;
     this.frustumSize = frustumSize;  // Store frustum size for later use
 
+    const aspect = window.innerWidth / window.innerHeight;
+
     this.scene = new THREE.Scene();
     this.camera = new THREE.OrthographicCamera(
         (frustumSize * aspect) / -2, 

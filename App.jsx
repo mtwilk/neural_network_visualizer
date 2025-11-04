@@ -45,6 +45,21 @@ function App() {
       scene.remove(scene.children[0]);
     }
 
+    // Compute bounds for fitting the network 
+    const allPositions = networkData.neuron_positions.map(([pos]) => pos).concat(networkData["edge positions"].flatMap(([s,e]) => [s, e]));
+    const xs = allPositions.map(p => p[0]);
+    const ys = allPositions.map(p => p[1]);
+    const minX = Math.min(...xs), maxX = Math.max(...xs);
+    const minY = Math.min(...ys), maxY = Math.max(...ys);
+    const width = Math.max(1e-6, maxX - minX);
+    const height = Math.max(1e-6, maxY - minY);
+
+    // target size in scene units (should be a bit smaller than frustumSize)
+    const targetSize = 80;
+    const scale = targetSize / Math.max(width, height);
+    const offsetX = (minX + maxX) / 2;
+    const offsetY = (minY + maxY) / 2;
+
     // Draw edges
     networkData["edge positions"].forEach(([start, end, color]) => {
       const material = new THREE.LineBasicMaterial({
@@ -53,8 +68,8 @@ function App() {
         transparent: true,
       });
       const points = [
-        new THREE.Vector3(start[0], start[1], 0),
-        new THREE.Vector3(end[0], end[1], 0),
+        new THREE.Vector3((start[0] - offsetX) * scale, (start[1]- offsetY) * scale, 0),
+        new THREE.Vector3((end[0] - offsetX) * scale, (end[1] - offsetY) * scale, 0),
       ];
       const geometry = new THREE.BufferGeometry().setFromPoints(points);
       const line = new THREE.Line(geometry, material);
@@ -74,7 +89,7 @@ function App() {
       });
       
       const neuron = new THREE.Mesh(geometry, material);
-      neuron.position.set(pos[0], pos[1], 0);
+      neuron.position.set((pos[0] - offsetX) * scale, (pos[1] - offsetY) * scale, 0);
       scene.add(neuron);
     });
 
