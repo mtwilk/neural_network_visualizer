@@ -120,6 +120,83 @@ function App() {
       scene.add(neuron);
     });
 
+
+    // Get x coordinates of each layer to place layer labels  
+    const layerMap = {};
+    networkData.neuron_positions.forEach(([pos, color]) => {
+      const x = Math.round(pos[0] * 100) / 100; 
+      if (!layerMap[x]) layerMap[x] = [];
+      layerMap[x].push({pos, color});
+    })
+
+    const layerXPositions = Object.keys(layerMap).map(Number).sort((a,b) => a - b);
+
+
+    // Create sprites for layer labels
+    function createTextSprite(message, parameters = {}) {
+      const fontface = parameters.fontface || 'Arial';
+      const fontsize = parameters.fontsize || 48;
+      const borderThickness = parameters.borderThickness || 4;
+      const backgroundColor = { r:255, g:255, b:255, a:0.8 }; // Semi-transparent background
+
+      const canvas = document.createElement('canvas');
+      const context = canvas.getContext('2d');
+      context.font = `${fontsize}px ${fontface}`;
+
+      // Get text metrics for proper sizing
+      const metrics = context.measureText(message);
+      const textWidth = metrics.width;
+
+      // Size canvas to fit text
+      canvas.width = textWidth + borderThickness * 2;
+      canvas.height = fontsize * 1.4;
+
+      // Reset font after canvas resize
+      context.font = `${fontsize}px ${fontface}`;
+
+      // Draw background
+      context.fillStyle = `rgba(${backgroundColor.r},${backgroundColor.g},${backgroundColor.b},${backgroundColor.a})`;
+      context.fillRect(0, 0, canvas.width, canvas.height);
+      
+      // Draw text
+      context.fillStyle = 'rgba(0, 0, 0, 1.0)';
+      context.textAlign = 'center';
+      context.textBaseline = 'middle';
+      context.fillText(message, canvas.width/2, canvas.height/2);
+
+      const texture = new THREE.CanvasTexture(canvas);
+      texture.needsUpdate = true;
+
+      const spriteMaterial = new THREE.SpriteMaterial({ map: texture });
+      const sprite = new THREE.Sprite(spriteMaterial);
+      
+      // Scale sprite based on canvas dimensions
+      const scaleFactor = 3; // try 0.5 or 1 for testing
+      sprite.scale.set((canvas.width / canvas.height) * scaleFactor, scaleFactor, 1);
+
+
+      return sprite;
+    }
+
+    // add layer labels to the scene
+    const layerLabels = ['FC1', 'FC2', 'FC3', 'Output'];
+
+    // Update the layer label positioning
+    layerXPositions.forEach((xPos, i) => {
+      const label = layerLabels[i] || `Layer ${i+1}`;
+      const sprite = createTextSprite(label);
+      
+      // Position labels above the neurons with proper scaling
+      const yPos = Math.max(...layerMap[xPos].map(n => n.pos[1]));
+      sprite.position.set(
+        (xPos - offsetX) * scale,
+        (yPos - offsetY) * scale + 0.15, // Adjust the 0.15 offset to move labels up/down
+        0
+      );
+      scene.add(sprite);
+    });
+
+
     // Fit the camera to the network so it is instantly visible
     if (typeof sceneRef.current.fitToScene === 'function') {
       sceneRef.current.fitToScene(1.15);
