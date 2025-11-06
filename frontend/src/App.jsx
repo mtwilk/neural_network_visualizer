@@ -170,8 +170,10 @@ function App() {
       const spriteMaterial = new THREE.SpriteMaterial({ map: texture });
       const sprite = new THREE.Sprite(spriteMaterial);
       
-      // Scale sprite based on canvas dimensions
-      const scaleFactor = 3; // try 0.5 or 1 for testing
+      // Scale sprite based on canvas dimensions AND font size
+      // Normalize by reference font size (48) so it scales proportionally
+      const baseScaleFactor = 3;
+      const scaleFactor = baseScaleFactor * (fontsize / 48);
       sprite.scale.set((canvas.width / canvas.height) * scaleFactor, scaleFactor, 1);
 
 
@@ -179,23 +181,38 @@ function App() {
     }
 
     // add layer labels to the scene
-    const layerLabels = ['FC1', 'FC2', 'FC3', 'Output'];
+    const layerLabels = ['Convolution output', 'FC1', 'FC2', 'FC3 - output'];
 
     // Update the layer label positioning
     layerXPositions.forEach((xPos, i) => {
       const label = layerLabels[i] || `Layer ${i+1}`;
-      const sprite = createTextSprite(label);
+      const sprite = createTextSprite(label, { fontsize: 44 });
       
       // Position labels above the neurons with proper scaling
       const yPos = Math.max(...layerMap[xPos].map(n => n.pos[1]));
       sprite.position.set(
         (xPos - offsetX) * scale,
-        (yPos - offsetY) * scale + 0.15, // Adjust the 0.15 offset to move labels up/down
+        (yPos - offsetY) * scale + 2, 
         0
       );
       scene.add(sprite);
+
+      // Add neuron count label below the layer name
+      if (networkData.layer_sizes && networkData.layer_sizes[i] !== undefined) {
+        const neuronCount = networkData.layer_sizes[i];
+        const countLabel = `${neuronCount} neurons`;
+        const countSprite = createTextSprite(countLabel, { fontsize: 28 }); // Even smaller font (was 36)
+        
+        countSprite.position.set(
+          (xPos - offsetX) * scale,
+          (yPos - offsetY) * scale + 0.10, // Position below the layer name (adjusted spacing)
+          0
+        );
+        scene.add(countSprite);
+      }
     });
 
+     
 
     // Fit the camera to the network so it is instantly visible
     if (typeof sceneRef.current.fitToScene === 'function') {
