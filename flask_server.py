@@ -37,7 +37,7 @@ def send_visualization_data(data: dict) -> wrappers.Response:
 
     :type: label: str
     :type: score: float
-    :type: edge positions: List[Tuple[position_start, position_end, color]]
+    :type: edge positions: List[Tuple[position_start, position_end, color, value]]
     :type: neuron_positions: List[Tuple[position, color]]
     :type: num_layers: int
     :type: layer_sizes: List[int]
@@ -48,7 +48,7 @@ def send_visualization_data(data: dict) -> wrappers.Response:
     VISUALIZER.load_model()
 
     labels, scores = VISUALIZER.classify_image(data['image_path'])
-
+    # VISUALIZER.subsample = int(data['subsample'])
     VISUALIZER.compute_visualization_data()
 
     # Convert all data to JSON-serializable format

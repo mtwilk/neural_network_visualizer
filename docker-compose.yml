@@ -1,0 +1,37 @@
+services:
+  # Backend Flask service
+  backend:
+    build: .
+    container_name: hci-backend
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./:/app
+      - /app/cnn_hci_app  # Exclude virtual environment
+    environment:
+      - FLASK_ENV=development
+      - PYTHONUNBUFFERED=1
+    networks:
+      - hci-network
+    restart: unless-stopped
+
+  # Frontend Vite development server
+  frontend:
+    image: node:20-alpine
+    container_name: hci-frontend
+    working_dir: /app/frontend
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app/frontend
+      - /app/frontend/node_modules  # Exclude node_modules
+    command: sh -c "npm install && npm run dev -- --host"
+    networks:
+      - hci-network
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+networks:
+  hci-network:
+    driver: bridge

@@ -193,6 +193,9 @@ class NetworkVisualizer:
         vmin = np.percentile(all_values, 1)
         vmax = np.percentile(all_values, 99)
         
+        # Compute normalization factor so that max absolute value is 1
+        max_abs = max(abs(vmin), abs(vmax))
+        
         for edge_info in edge_data:
             layer_idx = edge_info['layer_idx']
             contributions = edge_info['contributions']
@@ -203,8 +206,19 @@ class NetworkVisualizer:
             if self.subsample and total_edges > self.subsample:
                 # sample the most extreme edge values, half positive, half negative
                 # with the sum equal to subsample
-                lowest_indices = np.argpartition(contributions.flatten(), self.subsample // 2)[:self.subsample // 2]
-                highest_indices = np.argpartition(contributions.flatten(), -self.subsample // 2)[-self.subsample // 2:]
+                flat_contributions = contributions.flatten()
+                
+                # Get indices of lowest values (most negative)
+                lowest_indices = np.argpartition(flat_contributions, self.subsample // 2)[:self.subsample // 2]
+                # Sort these indices by their actual values (ascending = most negative first)
+                lowest_indices = lowest_indices[np.argsort(flat_contributions[lowest_indices])]
+                
+                # Get indices of highest values (most positive)
+                highest_indices = np.argpartition(flat_contributions, -self.subsample // 2)[-self.subsample // 2:]
+                # Sort these indices by their actual values (descending = most positive first)
+                highest_indices = highest_indices[np.argsort(flat_contributions[highest_indices])[::-1]]
+                
+                # Concatenate: most negative first, then most positive
                 edge_indices = np.concatenate((lowest_indices, highest_indices))
             else:
                 edge_indices = np.arange(total_edges)
@@ -222,7 +236,9 @@ class NetworkVisualizer:
                 
                 value = contributions[out_idx, in_idx]
                 color = self.value_to_color(value, vmin, vmax)
-                self.edge_display_data.append((pos_in, pos_out, color))
+                # Normalize the value so that max absolute value is 1
+                normalized_value = value / max_abs if max_abs > 0 else 0.0
+                self.edge_display_data.append((pos_in, pos_out, color, normalized_value))
 
     
     def visualize_network(self):
