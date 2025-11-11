@@ -4,11 +4,24 @@ import * as THREE from 'three';
 import SceneInit from './SceneInit';
 
 function App() {
-  const [label, setLabel] = useState('');  // Holds the classification label 
-  const [score, setScore] = useState(null);  // Holds the confidence score
+  const [labels, setLabels] = useState([]);  // Holds the top 5 classification labels 
+  const [scores, setScores] = useState([]);  // Holds the top 5 confidence scores
   const [networkData, setNetworkData] = useState(null);  // Holds the network data
   const [loading, setLoading] = useState(false);  // Indicates loading state
+  const [selectedImage, setSelectedImage] = useState('');  // Holds the currently selected image
   const sceneRef = useRef(null);  // Reference to the Three.js scene
+
+  // List of available images
+  const images = [
+    'panda.jpg',
+    'red_panda.jpg',
+    'polar_bear.jpg',
+    'brown_bear.jpg',
+    'sun_bear.jpg',
+    'beaver.jpg',
+    'binturong.jpg',
+    'giant_anteater.jpg'
+  ];
 
   // Initialize the Three.js scene
   useEffect(() => {
@@ -31,21 +44,22 @@ function App() {
     color: 'white' // White text for better contrast
   };
 
-  // Fetch network data from backend
-  const handleUpload = async () => {
+  // Fetch network data from backend - reusable function
+  const loadImage = async (imagePath) => {
     setLoading(true);  // Show loading indicator
+    setSelectedImage(imagePath);  // Update selected image
     try {
       // Send POST request to backend with image path
       const response = await fetch('http://localhost:5000/main', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ image_path: 'panda.jpg' }),
+        body: JSON.stringify({ image_path: imagePath }),
       });
 
       // Parse JSON response and update network data state
       const data = await response.json();
-      setLabel(data.label);
-      setScore(data.score);
+      setLabels(data.labels || []);
+      setScores(data.scores || []);
       console.log('Backend response:', data);
       setNetworkData(data);  // Network data is processed later 
     } catch (err) {
@@ -223,16 +237,53 @@ function App() {
 
   return (
     <div>
+      {/* Image selection buttons */}
       <div style={{ marginBottom: '10px' }}>
-        <button onClick={handleUpload} disabled={loading}>
-          {loading ? 'Loading...' : 'Load panda.jpg'}
-        </button>
+        {images.map((image) => (
+          <button 
+            key={image}
+            onClick={() => loadImage(image)} 
+            disabled={loading}
+            style={{ marginRight: '5px' }}
+          >
+            {loading && selectedImage === image ? 'Loading...' : `Load ${image.replace('.jpg', '')}`}
+          </button>
+        ))}
       </div>
-      {(label || score !== null) && (
+
+      {/* Display selected image - no frame, just the image */}
+      {selectedImage && (
+        <div style={{
+          position: 'fixed',
+          top: '50px',
+          left: '10px',
+          zIndex: 1000
+        }}>
+          <img 
+            src={`http://localhost:5000/images/${selectedImage}`} 
+            alt={selectedImage}
+            style={{
+              width: '200px',
+              height: '200px',
+              objectFit: 'cover',
+              display: 'block'
+            }}
+            onError={(e) => {
+              e.target.style.display = 'none';
+            }}
+          />
+        </div>
+      )}
+
+      {/* Classification results overlay */}
+      {(labels.length > 0 || scores.length > 0) && (
         <div style={overlayStyle}>
-          <strong>Classification Result:</strong><br />
-          {label && <span>Label: {label}<br /></span>}
-          {score !== null && <span>Confidence Score: {score.toFixed(4)}</span>}
+          <strong>Top 5 Classification Results:</strong><br />
+          {labels.map((label, index) => (
+            <div key={index} style={{ marginTop: '5px' }}>
+              {index + 1}. {label}: {scores[index]?.toFixed(4) || 'N/A'}
+            </div>
+          ))}
         </div>
       )}
 

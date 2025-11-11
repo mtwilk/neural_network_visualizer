@@ -101,13 +101,14 @@ class NetworkVisualizer:
         with torch.no_grad():
             output = self.model(input_tensor)
             probs = F.softmax(output[0], dim=0)
-            predicted = torch.max(probs, dim=0)
+            predicted = torch.topk(probs, k=5, dim=0)
         
         labels = self.weights.meta["categories"]
-        idx = predicted.indices.cpu()
-        label = labels[idx]
-        score = predicted.values.cpu()
-        return label, float(score)
+        indicies = predicted.indices.cpu().tolist()
+        output = [labels[i] for i in indicies]
+        scores = predicted.values.cpu().tolist()
+        # scores = [float(s) for s in scores]
+        return output, scores
 
 
     def compute_neuron_positions(self, layer_sizes: List[int], xspacing: float) -> List[List[Tuple[float, float]]]:

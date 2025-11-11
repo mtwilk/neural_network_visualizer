@@ -1,5 +1,5 @@
 from flask_cors import CORS
-from flask import Flask, request, jsonify, wrappers
+from flask import Flask, request, jsonify, wrappers, send_file
 from visualize_fc_neurons import NetworkVisualizer
 import os
 
@@ -47,14 +47,14 @@ def send_visualization_data(data: dict) -> wrappers.Response:
     VISUALIZER = NetworkVisualizer()
     VISUALIZER.load_model()
 
-    label, score = VISUALIZER.classify_image(data['image_path'])
+    labels, scores = VISUALIZER.classify_image(data['image_path'])
 
     VISUALIZER.compute_visualization_data()
 
     # Convert all data to JSON-serializable format
     response_data = {
-        'label': label,
-        'score': float(score),
+        'labels': convert_to_json_serializable(labels),
+        'scores': convert_to_json_serializable(scores),
         'edge positions': convert_to_json_serializable(VISUALIZER.edge_display_data),
         'neuron_positions': convert_to_json_serializable(VISUALIZER.node_display_data),
         'num_layers': int(VISUALIZER.num_layers),
@@ -67,6 +67,18 @@ def send_visualization_data(data: dict) -> wrappers.Response:
 # @app.route('/')
 # def index():
 #     return jsonify({'status': 'Flask server is running', 'routes': ['/main']})
+
+@app.route('/images/<filename>')
+def serve_image(filename):
+    """Serve image files from the project directory."""
+    try:
+        image_path = os.path.join(os.path.dirname(__file__), filename)
+        if os.path.exists(image_path):
+            return send_file(image_path, mimetype='image/jpeg')
+        else:
+            return jsonify({'error': 'Image not found'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/main', methods=['POST'])
 def main():
