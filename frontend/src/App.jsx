@@ -13,6 +13,7 @@ function App() {
   const [edgeCount, setEdgeCount] = useState(30000);  // Number of edges to display (max 30000)
   const [widthScale, setWidthScale] = useState(1);  // Network width scale (0.5 to 2)
   const [colorblindMode, setColorblindMode] = useState(false);  // Colorblind palette toggle
+  const [showFullscreenImage, setShowFullscreenImage] = useState(false);  // Fullscreen model image toggle
   const sceneRef = useRef(null);  // Reference to the Three.js scene
 
   // List of available images
@@ -82,12 +83,14 @@ function App() {
     // Start loading when re-rendering the visualization
     setLoading(true);
 
-    const { scene } = sceneRef.current;  // Get the Three.js scene
+    // Use setTimeout to allow the loading spinner to render before heavy computation
+    const timeoutId = setTimeout(() => {
+      const { scene } = sceneRef.current;  // Get the Three.js scene
 
-    // Remove existing objects from the scene (resets it)
-    while (scene.children.length > 0) {
-      scene.remove(scene.children[0]);
-    }
+      // Remove existing objects from the scene (resets it)
+      while (scene.children.length > 0) {
+        scene.remove(scene.children[0]);
+      }
 
     // Colorblind palette conversion: green -> blue (positive), red -> yellow-orange (negative)
     const toColorblind = (color) => {
@@ -287,6 +290,9 @@ function App() {
 
     // Edges are now plotted, stop loading
     setLoading(false);
+    }, 50);  // Small delay to allow spinner to render
+
+    return () => clearTimeout(timeoutId);  // Cleanup on unmount or re-run
 
   }, [networkData, edgeCount, widthScale, colorblindMode]);
 
@@ -393,17 +399,20 @@ function App() {
         fontSize: '12px',
         zIndex: 1000
       }}>
-        {/* VGG19 Architecture Image */}
+        {/* VGG19 Architecture Image - Click to enlarge */}
         <div style={{ marginBottom: '10px' }}>
           <img 
             src={VGG19Image} 
             alt="VGG19 Architecture"
+            onClick={() => setShowFullscreenImage(true)}
             style={{
               width: '100%',
               maxWidth: '300px',
               display: 'block',
-              borderRadius: '3px'
+              borderRadius: '3px',
+              cursor: 'pointer'
             }}
+            title="Click to view fullscreen"
           />
         </div>
         
@@ -427,7 +436,97 @@ function App() {
         </div>
       </div>
 
+      {/* Loading Spinner */}
+      {loading && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100vw',
+          height: '100vh',
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          alignItems: 'center',
+          gap: '15px',
+          zIndex: 1500
+        }}>
+          <div style={{
+            width: '60px',
+            height: '60px',
+            border: '5px solid rgba(100, 100, 100, 0.5)',
+            borderTop: '5px solid #00aaff',
+            borderRadius: '50%',
+            animation: 'spin 1s linear infinite'
+          }} />
+          <span style={{
+            color: '#00aaff',
+            fontFamily: 'Arial, sans-serif',
+            fontSize: '16px',
+            fontWeight: 'bold'
+          }}>Loading model...</span>
+          <style>{`
+            @keyframes spin {
+              0% { transform: rotate(0deg); }
+              100% { transform: rotate(360deg); }
+            }
+          `}</style>
+        </div>
+      )}
+
       <canvas id="myThreeJsCanvas" />
+
+      {/* Fullscreen Image Modal */}
+      {showFullscreenImage && (
+        <div 
+          onClick={() => setShowFullscreenImage(false)}
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100vw',
+            height: '100vh',
+            backgroundColor: 'rgba(0, 0, 0, 0.9)',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            zIndex: 2000,
+            cursor: 'pointer'
+          }}
+        >
+          <img 
+            src={VGG19Image} 
+            alt="VGG19 Architecture"
+            style={{
+              maxWidth: '95vw',
+              maxHeight: '95vh',
+              objectFit: 'contain',
+              borderRadius: '5px'
+            }}
+          />
+          <div style={{
+            position: 'absolute',
+            top: '20px',
+            right: '30px',
+            color: 'white',
+            fontSize: '30px',
+            fontWeight: 'bold',
+            cursor: 'pointer'
+          }}>
+            ×
+          </div>
+          <div style={{
+            position: 'absolute',
+            bottom: '20px',
+            color: 'white',
+            fontSize: '14px',
+            fontFamily: 'Arial, sans-serif'
+          }}>
+            Click anywhere to close
+          </div>
+        </div>
+      )}
     </div>
   );
 }
