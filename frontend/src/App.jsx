@@ -416,23 +416,26 @@ function App() {
           />
         </div>
         
-        <div style={{ display: 'flex', alignItems: 'center', marginBottom: '5px' }}>
+        {/* Activation gradient legend: Negative (left) - Neutral (middle) - Positive (right) */}
+        <div style={{ marginBottom: '5px' }}>
           <div style={{ 
-            width: '20px', 
+            width: '100%', 
             height: '20px', 
-            backgroundColor: colorblindMode ? 'rgb(0, 51, 204)' : 'rgb(0, 255, 0)', 
-            marginRight: '8px' 
+            background: colorblindMode 
+              ? 'linear-gradient(to right, rgb(255, 153, 0), rgb(255, 255, 255), rgb(0, 51, 204))' 
+              : 'linear-gradient(to right, rgb(255, 0, 0), rgb(255, 255, 255), rgb(0, 255, 0))', 
+            borderRadius: '3px'
           }}></div>
-          <span>Brighter = Higher activation</span>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center' }}>
           <div style={{ 
-            width: '20px', 
-            height: '20px', 
-            backgroundColor: colorblindMode ? 'rgb(255, 153, 0)' : 'rgb(255, 0, 0)', 
-            marginRight: '8px' 
-          }}></div>
-          <span>Brighter = Lower activation</span>
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            marginTop: '4px',
+            fontSize: '11px'
+          }}>
+            <span>− Negative</span>
+            <span>Neutral</span>
+            <span>Positive +</span>
+          </div>
         </div>
       </div>
 
